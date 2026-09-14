@@ -38,7 +38,7 @@ test("Add 3 products to Cart and Verify the Cart Count",async()=>{
         "https://www.saucedemo.com/cart.html");
  });
 
-  test("Verify Navigate to Checkout Page 1",async({page})=>{
+  test("Verify Navigate to Checkout Page",async({page})=>{
     await cart.OpenCart();
     await cart.CheckOutButton();
 
