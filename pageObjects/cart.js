@@ -1,41 +1,29 @@
-import BasePage from './basePage'
+import BasePage from './basePage.js';
 
-export class Cart extends BasePage{
- constructor(page){
+/**
+ * Cart page -> https://www.saucedemo.com/cart.html
+ * (Opening the cart itself lives in BasePage, because the cart icon
+ *  is in the header of every page.)
+ */
+export class Cart extends BasePage {
+  constructor(page) {
     super(page);
-   //product
-    this.shoppingCartLink = this.page.locator('[data-test="shopping-cart-link"]')  
-    this.shoppingCartBadge = this.page.locator('[data-test="shopping-cart-badge"]')
-   
-    this.checkoutButton = this.page.locator('[data-test="checkout"]')
-    this.continueShoppingButton = this.page.locator('[data-test="continue-shopping"]')
- }
 
-//Dynamic Locator according to product name 
-getProduct(productName){
- return this.page.locator('[data-test="inventory-item"]').filter({ hasText: productName })
-}
+    this.cartItems = page.locator('[data-test="inventory-item"]');
+    this.checkoutButton = page.locator('[data-test="checkout"]');
+    this.continueShoppingButton = page.locator('[data-test="continue-shopping"]');
+  }
 
+  // Dynamic Locator for a product row inside the cart
+  getCartItem(productName) {
+    return this.cartItems.filter({ hasText: productName });
+  }
 
-//Add to Cart Button for Specific product(Action Method)
-async addProductToCart(productName) {
- await this.getProduct(productName).getByRole('button', { name: 'Add to cart' }).click();
-}
-
-async OpenCart(){
- await this.shoppingCartLink.click();//cart open
-}
-
-getCartBadge(){
-    return this.shoppingCartBadge;//Count Return for Assertion
-}
- async CheckOutButton(){
+  async clickCheckout() {
     await this.checkoutButton.click();
- }
+  }
 
-async ContinueShoppingtButton(){
+  async clickContinueShopping() {
     await this.continueShoppingButton.click();
- }
-
-
+  }
 }

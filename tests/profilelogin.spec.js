@@ -1,84 +1,101 @@
 import { test, expect } from "@playwright/test";
-//import { Utilities } from "../pageObjects/Utils";
-import { ProfileLogin } from "../pageObjects/profilelogin";
-import { faker } from '@faker-js/faker';
+import { ProfileLogin } from "../pageObjects/profilelogin.js";
+import { Inventory } from "../pageObjects/inventory.js";
+import { Cart } from "../pageObjects/cart.js";
+import { Checkout } from "../pageObjects/checkout.js";
 
-// if we use faker
-const user= faker.internet.email();;
+test.describe.serial("SauceDemo Site Auitomation Test", () => {
 
-//if we use random generate email function
-// const utilities = new Utilities();
-// let user="";
-
-test.describe.serial("SauceDemo Site Auitomation Test",()=>{
-     let profilelogin;
+    let profilelogin;
+    let inventory;
+    let cart;
+    let checkout;
 
     test.beforeEach(async ({ page }) => {
+
         profilelogin = new ProfileLogin(page);
-        await page.goto("https://www.saucedemo.com/");
+        inventory = new Inventory(page);
+        cart = new Cart(page);
+        checkout = new Checkout(page);
+
+        await profilelogin.open();
     });
 
+    test.skip("Login with valid Credentials", async ({ page }) => {
 
-test.skip("Login with valid Credentials",async({page})=>{
+        await profilelogin.login("standard_user", "secret_sauce");
 
+        // dynamic wait (instead of waitForTimeout)
+        await page.waitForLoadState("networkidle");
 
-await profilelogin.UsernameInput("standard_user");
-await profilelogin.PasswordInput("secret_sauce");
-//await profilelogin.UsernameInput(user);
-await profilelogin.loginButtonClick();
-
-//user =utilities.randomEmail();
-
-//await page.waitForTimeout(3000);//eta use korbo na
-
-//dynamic vabhe use korer jnno
-await page.waitForLoadState("networkidle");
-
-await expect(page).toHaveURL('https://www.saucedemo.com/inventory.html');
-});
-
-test.skip("Login with invalid credentials", async({page})=>{
-
-await profilelogin.UsernameInput("Tester");
-await profilelogin.PasswordInput("Test123");
-await profilelogin.loginButtonClick();
-await expect(profilelogin.getLoginErrorMessage()).toHaveText('Epic sadface: Username and password do not match any user in this service');
-});
-
-test.skip("Login with Valid Username And Empty Password",async()=>{
-
-   await profilelogin.UsernameInput("locked_out_user");
-   await profilelogin.PasswordInput("");
-   await profilelogin.loginButtonClick();
-   await expect(profilelogin.passwordRequiredMessage).toBeVisible();
-});
-
-test("Login with locked_out_user and verify the error message",async()=>{
-
-   await profilelogin.UsernameInput("locked_out_user");
-   await profilelogin.PasswordInput("secret_sauce");
-   await profilelogin.loginButtonClick();
-   await expect(profilelogin.lockedOutErrorMessage).toBeVisible();
-});
-
-
-test("Complete Purchase Journey",async({page})=>{
-
-   test.step("Login with valid credentials", async () => {
-
-await profilelogin.UsernameInput("standard_user");
-await profilelogin.PasswordInput("secret_sauce");
-await profilelogin.loginButtonClick();
-await expect(page).toHaveURL('https://www.saucedemo.com/inventory.html');
+        await expect(page).toHaveURL("https://www.saucedemo.com/inventory.html");
     });
 
-    test.step("Reset App State", async () => {
+    test.skip("Login with invalid credentials", async () => {
 
-    await profilelogin.OpenHamburgerMenuClick(); // open hamburger menu
-        // reset app state
+        await profilelogin.login("Tester", "Test123");
+
+        await expect(profilelogin.getLoginErrorMessage())
+            .toHaveText("Epic sadface: Username and password do not match any user in this service");
     });
 
-});
+    test.skip("Login with Valid Username And Empty Password", async () => {
 
-});
+        await profilelogin.login("locked_out_user", "");
 
+        await expect(profilelogin.getLoginErrorMessage())
+            .toHaveText("Epic sadface: Password is required");
+    });
+
+    test("Login with locked_out_user and verify the error message", async () => {
+
+        await profilelogin.login("locked_out_user", "secret_sauce");
+
+        await expect(profilelogin.getLoginErrorMessage())
+            .toHaveText("Epic sadface: Sorry, this user has been locked out.");
+    });
+
+    test("Complete Purchase Journey", async ({ page }) => {
+
+        await test.step("Login with valid credentials", async () => {
+
+            await profilelogin.login("standard_user", "secret_sauce");
+
+            await expect(page).toHaveURL("https://www.saucedemo.com/inventory.html");
+        });
+
+        await test.step("Add 3 products to the cart", async () => {
+
+            await inventory.addProductToCart("Sauce Labs Fleece Jacket");
+            await inventory.addProductToCart("Sauce Labs Bolt T-Shirt");
+            await inventory.addProductToCart("Sauce Labs Onesie");
+
+            await expect(inventory.getCartBadge()).toHaveText("3");
+        });
+
+        await test.step("Open cart and go to checkout", async () => {
+
+            await inventory.openCart();
+            await cart.clickCheckout();
+
+            await expect(page).toHaveURL("https://www.saucedemo.com/checkout-step-one.html");
+        });
+
+        await test.step("Fill the form and finish the order", async () => {
+
+            await checkout.fillCustomerInfo("Test", "User", "12345");
+            await checkout.clickContinue();
+            await checkout.clickFinish();
+
+            await expect(page).toHaveURL("https://www.saucedemo.com/checkout-complete.html");
+            await expect(checkout.getSuccessOrderMsg()).toHaveText("Thank you for your order!");
+        });
+
+        await test.step("Reset App State", async () => {
+
+            await checkout.resetAppStateClick();   // open menu -> reset -> close menu
+
+            await expect(checkout.getCartBadge()).toBeHidden();
+        });
+    });
+});

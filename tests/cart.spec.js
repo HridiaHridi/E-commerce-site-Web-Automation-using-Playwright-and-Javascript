@@ -1,47 +1,47 @@
 import { test, expect } from "@playwright/test";
 import { ProfileLogin } from "../pageObjects/profilelogin.js";
-import {Cart} from "../pageObjects/cart.js";
+import { Inventory } from "../pageObjects/inventory.js";
+import { Cart } from "../pageObjects/cart.js";
 
 test.describe("SauceDemo Product Test", () => {
 
-    let cart;
     let profilelogin;
+    let inventory;
+    let cart;
 
     test.beforeEach(async ({ page }) => {
 
         profilelogin = new ProfileLogin(page);
+        inventory = new Inventory(page);
         cart = new Cart(page);
 
-        await page.goto("https://www.saucedemo.com/");
+        await profilelogin.open();
+        await profilelogin.login("standard_user", "secret_sauce");
 
-        await profilelogin.UsernameInput("standard_user");
-        await profilelogin.PasswordInput("secret_sauce");
-        await profilelogin.loginButtonClick();
+        await expect(page).toHaveURL("https://www.saucedemo.com/inventory.html");
+    });
 
-        await expect(page).toHaveURL(
-            "https://www.saucedemo.com/inventory.html"
-        );
-    }); 
+    test("Add 3 products to Cart and Verify the Cart Count", async () => {
 
-test("Add 3 products to Cart and Verify the Cart Count",async()=>{  
- 
-    await cart.addProductToCart("Sauce Labs Fleece Jacket");   
-    await cart.addProductToCart("Sauce Labs Bolt T-Shirt");
-    await cart.addProductToCart("Sauce Labs Onesie");
+        await inventory.addProductToCart("Sauce Labs Fleece Jacket");
+        await inventory.addProductToCart("Sauce Labs Bolt T-Shirt");
+        await inventory.addProductToCart("Sauce Labs Onesie");
 
-     await expect(cart.getCartBadge()).toHaveText("3");
-}); 
+        await expect(inventory.getCartBadge()).toHaveText("3");
+    });
 
- test("Open Cart After Adding products",async({page})=>{
-    await cart.OpenCart();
-    await expect(page).toHaveURL(
-        "https://www.saucedemo.com/cart.html");
- });
+    test("Open Cart After Adding products", async ({ page }) => {
 
-  test("Verify Navigate to Checkout Page",async({page})=>{
-    await cart.OpenCart();
-    await cart.CheckOutButton();
+        await inventory.openCart();
 
-    await expect(page).toHaveURL("https://www.saucedemo.com/checkout-step-one.html");
-  });
+        await expect(page).toHaveURL("https://www.saucedemo.com/cart.html");
+    });
+
+    test("Verify Navigate to Checkout Page", async ({ page }) => {
+
+        await inventory.openCart();
+        await cart.clickCheckout();
+
+        await expect(page).toHaveURL("https://www.saucedemo.com/checkout-step-one.html");
+    });
 });
